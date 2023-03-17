@@ -1,65 +1,104 @@
 import Head from 'next/head'
-import Image from 'next/image'
-
 import styles from '@/pages/index.module.css'
+import { USER_DATA } from 'data/user-data'
+import { useEffect, useState } from 'react'
+
+type userData = {
+  name: string,
+  title: string,
+  desk: number,
+  date: {
+    day: number,
+    month: number,
+    year: number
+  }
+}
+
+type userListProps = {
+  userData: userData[]
+}
+
+const UserList = ({userData}: userListProps) => <ul className={styles.userList} aria-labelledby='results' aria-label='results'>
+  {userData.map((item, idx) => <li key={idx}>
+    <ul className={styles.user}>
+      <li className={styles.userItem}>
+        <span>Name:</span>
+        <span>{item.name}</span>
+      </li>
+      <li className={styles.userItem}>
+        <span>Title:</span>
+        <span>{item.title}</span>
+      </li>
+      <li className={styles.userItem}>
+        <span>Desk number:</span>
+        <span>{item.desk}</span>
+      </li>
+      <li className={styles.userItem}>
+        <span>Reservation date:</span>
+        <span>{`${item.date.day}.${item.date.month}.${item.date.year}`}</span>
+      </li>
+    </ul>
+  </li>)}
+</ul>
+
+const useSearch = () => {
+  const [userData, setUserData] = useState<userData[] | null>(null)
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<userData[] | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(()=> {
+    setUserData(USER_DATA)
+  }, [])
+
+  const performSearch = () => {
+    if (query && query.length <=2) {
+      return setError('Please enter at least 3 characters')
+    }
+    if (userData && query && query.length > 2) {
+      setError('')
+      const searchResults = userData.filter(item => item.name.toLowerCase().includes(query.toLowerCase()) || item.title.toLowerCase().includes(query.toLowerCase()))
+      setTimeout(()=> {
+        setResults(searchResults)
+      }, 2000)
+
+      setQuery('')
+    }
+  }
+
+  return {query, setQuery, results, performSearch, error}
+}
 
 export default function Home() {
+
+  const { query, setQuery, results, performSearch, error } = useSearch()
+  
+  const checkSubmitSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      performSearch()
+    }  
+  }
+
   return (
     <div className={styles.container}>
       <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
+        <title>See who is in the office!</title>
       </Head>
 
       <main>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing <code>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a href="https://vercel.com/new" className={styles.card}>
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+        <h1>See who is in the office this week!</h1>
+        <div className={styles.searchBox}>
+          <label htmlFor="name">Type a person's name or title</label>
+          <input onChange={(e)=>{setQuery(e.target.value)}} onKeyUp={checkSubmitSearch} type="text" name="name" value={query}></input>
+          {error && <span className={styles.error}>{error}</span>}
+          <button onClick={performSearch}>Search</button>
         </div>
+        {results && results.length ? 
+        <UserList userData={results} /> :
+        results && results.length === 0 ?
+        <p>No results found</p>
+        : ''} 
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
   )
 }
